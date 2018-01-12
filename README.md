@@ -1,1 +1,5 @@
-# 个人命令行工具集
+# CLI Tool Kit
+
+### 安装
+
+> python3 setup.py install
