@@ -3,6 +3,7 @@
 
 import sys
 import os
+import re
 
 hasExtension = lambda path, extension: os.path.splitext(path)[-1] == '.' + extension
 
@@ -26,12 +27,7 @@ def getfile(extension):
     return extf
 
 def symbolic():
-    #TODO: 根据uuid查找
-    dsym = getfile('dSYM')
-    if not dsym:
-        print('dSYM file not found.')
-        return
-    print('set dSYM file to {}'.format(dsym))
+    #获取crash log文件
     try:
         beta = sys.argv[1]
     except IndexError as e:
@@ -40,12 +36,30 @@ def symbolic():
         print('beta file not found.')
         return
     print('symbolic beta file {}'.format(beta))
+    with open(beta, 'r') as f:
+        log = f.read()
+        print('log length: {}'.format(len(log)))
+        uuids = re.findall(r'"slice_uuid":"([0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12})"', log)
+        print('founded uuids: {}'.format(uuids))
+        try:
+            uuid = uuids[0].upper()
+            findcmd = 'mdfind "com_apple_xcode_dsym_uuids == {}"'.format(uuid)
+            print(findcmd)
+            dsym = os.popen(findcmd, 'r').readlines()[0].rstrip()
+        except Exception as e:
+            print(e)
+            dsym = getfile('dSYM')
+    if not dsym:
+        print('dSYM file not found.')
+        return
+    print('set dSYM file to {}'.format(dsym))
     #shell
     os.environ['DEVELOPER_DIR'] = '/Applications/XCode.app/Contents/Developer'
     logf = beta.replace('beta', 'log')
+    os.system('touch {}'.format(logf))
     symbolicatecrash = '/Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/symbolicatecrash'
-    cmd = '{} -d {} -o {} {}'.format(symbolicatecrash, dsym, logf, beta)
-    print('excuting cmd {}'.format(cmd))
+    cmd = '{} -d "{}" -o "{}" "{}" > /dev/null'.format(symbolicatecrash, dsym, logf, beta)
+    print(cmd)
     os.system(cmd)
     os.system('open {}'.format(logf))
 
