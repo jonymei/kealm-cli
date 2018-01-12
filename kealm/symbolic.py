@@ -5,11 +5,11 @@ import sys
 import os
 import re
 
-hasExtension = lambda path, extension: os.path.splitext(path)[-1] == '.' + extension
+hasExtensions = lambda path, extension: os.path.splitext(path)[-1][1:] in extension
 
 def getfile(extension):
     files = os.listdir()
-    exts = [f for f in files if hasExtension(f, extension)]
+    exts = [f for f in files if hasExtensions(f, extension)]
     dlen = len(exts)
     if dlen == 0:
         return
@@ -20,7 +20,10 @@ def getfile(extension):
             for i in range(0, dlen):
                 item = '{}. {}'.format(i + 1, exts[i])
                 print(item)
-            index = int(input('Please select a file: '))
+            index = input('Please select a {} file: '.format(extension))
+            if not str.isdigit(index):
+                continue
+            index = int(index)
             if 0 < index < dlen + 1:
                 extf = exts[index - 1]
                 break
@@ -31,7 +34,7 @@ def symbolic():
     try:
         beta = sys.argv[1]
     except IndexError as e:
-        beta = getfile('beta')
+        beta = getfile(['beta', 'crash'])
     if not beta:
         print('beta file not found.')
         return
@@ -48,7 +51,7 @@ def symbolic():
             dsym = os.popen(findcmd, 'r').readlines()[0].rstrip()
         except Exception as e:
             print(e)
-            dsym = getfile('dSYM')
+            dsym = getfile(['dSYM'])
     if not dsym:
         print('dSYM file not found.')
         return
