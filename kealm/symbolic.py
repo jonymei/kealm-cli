@@ -42,7 +42,16 @@ def symbolic():
     with open(beta, 'r') as f:
         log = f.read()
         print('log length: {}'.format(len(log)))
-        uuids = re.findall(r'"slice_uuid":"([0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12})"', log)
+        if beta.endswith('crash'):
+            #
+            uuids = re.findall(r'<([0-9a-z]{32})> /var/containers/', log)
+            if len(uuids) > 0:
+                uuid = uuids[0].upper()
+                uuid = [uuid[0:8], uuid[8:12], uuid[12:16], uuid[16:20], uuid[20:32]]
+                uuid = '-'.join(uuid)
+                uuids[0] = uuid
+        else:
+            uuids = re.findall(r'"slice_uuid":"([0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12})"', log)
         print('founded uuids: {}'.format(uuids))
         try:
             uuid = uuids[0].upper()
@@ -58,7 +67,7 @@ def symbolic():
     print('set dSYM file to {}'.format(dsym))
     #shell
     os.environ['DEVELOPER_DIR'] = '/Applications/XCode.app/Contents/Developer'
-    logf = beta.replace('beta', 'log')
+    logf = beta.replace('beta', 'log').replace(' ', '')
     os.system('touch {}'.format(logf))
     symbolicatecrash = '/Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/symbolicatecrash'
     cmd = '{} -d "{}" -o "{}" "{}" > /dev/null'.format(symbolicatecrash, dsym, logf, beta)
